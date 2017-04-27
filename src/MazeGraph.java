@@ -2,7 +2,9 @@
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 
 import javafx.geometry.Point2D;
@@ -11,8 +13,9 @@ import javafx.scene.image.PixelReader;
 import javafx.scene.paint.Color;
 
 public class MazeGraph {
-    //private List<Integer>[] adjList;
     private HashMap<String, Vertex> verts;
+    private boolean renderSolution;
+    private LinkedList<Vertex> solutionPath;
     
     public MazeGraph() {
         //adjList = new List[numV];
@@ -20,16 +23,30 @@ public class MazeGraph {
             adjList[i] = new LinkedList<Vertex>();
         }*/
         verts = new HashMap<String, Vertex>();
+        renderSolution = false;
+        solutionPath = new LinkedList<Vertex>();
     }
     
     public void render(GraphicsContext gc) {
         //render vertices
-        if (verts != null && !verts.isEmpty()) {
+        /*if (verts != null && !verts.isEmpty()) {
             Set<String> ks = verts.keySet();
             for (String key : ks) {
                 Vertex v = verts.get(key);
                 v.render(gc);
             }
+        }*/
+        
+        //render solution
+        if (renderSolution) {
+        	//draw edges between all vertices in solutionPath
+        	gc.setStroke(Color.ORANGE);
+        	//gc.setLineWidth(2);
+        	Vertex start = solutionPath.getFirst();
+        	for (Vertex end : solutionPath) {
+        		gc.strokeLine(start.x, start.y, end.x, end.y);        		
+        		start = end;
+        	}
         }
     }
 
@@ -196,11 +213,85 @@ public class MazeGraph {
     	return null;
     }
     
+    private Vertex getStartVert() {
+    	for (int row = 0; row < Game.GRID_SIZE * 2 - 3; row++) {
+    		Vertex currentVert = verts.get(row + "_-1");
+    		if (currentVert != null) {
+    			return currentVert;
+    		}
+    	}
+    	return null;
+    }
+    
+    private Vertex getExitVert() {
+    	for (int row = 0; row < Game.GRID_SIZE * 2 - 3; row++) {
+    		Vertex currentVert = verts.get(row + "_" + Game.EXIT_COLUMN);
+    		if (currentVert != null) {
+    			return currentVert;
+    		}
+    	}
+    	return null;
+    }
+    
+    public void renderSolution(boolean b) {
+    	renderSolution = b;    	
+    }
+    
+    public void solveMaze() {
+    	//gets called after maze has been initialized
+    	solutionPath = getSolutionPath();
+    	
+    	//testing purposes
+    	/*for (Vertex v : solutionPath) {
+    		System.out.println(v.vNum);
+    	}*/
+    }
+    
+    private LinkedList<Vertex> getSolutionPath() {
+    	LinkedList<Vertex> result = new LinkedList<Vertex>();
+    	breadthFirstSearch();
+    	Vertex current = getExitVert();
+    	//result.addFirst(current);
+    	
+    	while (current.col != -1) {
+    		result.addFirst(current);
+    		current = current.bfsParent;
+    	}
+    	result.addFirst(current); //add start vertex
+    	
+		return result;
+    }
+    
+    private void breadthFirstSearch() {
+    	Queue<Vertex> theQueue = new LinkedList<Vertex>();
+    	
+    	//begin BFS with start vertex
+    	Vertex startVert = getStartVert();
+    	startVert.bfsIdentified = true;
+    	theQueue.offer(startVert);
+    	
+    	while (!theQueue.isEmpty()) {
+    		Vertex current = theQueue.remove();
+    		
+    		List<String> adjs = current.adjacencies;
+            for (String adjacentNodeKey : adjs) {
+                Vertex adjacentVert = verts.get(adjacentNodeKey);
+                if (!adjacentVert.bfsIdentified) {
+                	adjacentVert.bfsIdentified = true;
+                	theQueue.offer(adjacentVert);
+                	adjacentVert.bfsParent = current;
+                }
+            }
+    	}
+    }
+    
     private class Vertex {
         private double x, y;
         private int row, col;
         private String vNum;
         private List<String> adjacencies;
+        private Vertex bfsParent;
+        private boolean bfsIdentified;
         
         public Vertex(double x, double y, int row, int col, List<String> adjs) {
             this.x = x;
@@ -209,6 +300,8 @@ public class MazeGraph {
             this.col = col;
             vNum = row + "_" + col; 
             adjacencies = adjs;
+            bfsParent = null;
+            bfsIdentified = false;
         }
         
         public void render(GraphicsContext gc) {
@@ -219,5 +312,6 @@ public class MazeGraph {
         public void addAdjacency(Vertex adjV) {
             adjacencies.add(adjV.vNum);
         }
+        
     }
 }

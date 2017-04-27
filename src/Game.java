@@ -43,6 +43,10 @@ import javafx.stage.Stage;
  * path was to the fastest route.
  * 
  * DB connected high-score list
+ * 
+ * Make mazes much larger and maybe make walls thinner
+ * 
+ * implement hint system which shows the next 10 moves or so
  */
 
 public class Game extends Application {
@@ -50,8 +54,8 @@ public class Game extends Application {
     public static final int CANVAS_HEIGHT = 512;
     public static final int GRID_SIZE = 20;
     public static final int SPACING = 10;
+    public static final int EXIT_COLUMN = GRID_SIZE * 2 - 3;
     private static final double WALL_DENSITY = 0.55;
-    private static final int EXIT_COLUMN = GRID_SIZE * 2 - 3;
     private static Canvas canvas;
     private boolean rendered, congratulated;
     private WallAnchor[][] anchorPoints;
@@ -82,13 +86,30 @@ public class Game extends Application {
         canvas = new Canvas(CANVAS_WIDTH, CANVAS_HEIGHT);
         root.getChildren().add(canvas);
                         
+        
+        Button showSolution = new Button("Show Solution");
+        showSolution.setTranslateX((CANVAS_WIDTH / 2) - 35);
+        showSolution.setTranslateY(CANVAS_HEIGHT - 55);
+        root.getChildren().add(showSolution);
+        showSolution.setOnAction((ActionEvent e) -> {
+        	if (showSolution.getText().contains("Show")) {
+        		mazeGraph.renderSolution(true);
+        		showSolution.setText("Hide Solution");  
+        	}
+        	else {
+        		mazeGraph.renderSolution(false);
+        		showSolution.setText("Show Solution");
+        	}
+        });
+        
         Button reset = new Button("New Maze");
         reset.setTranslateX((CANVAS_WIDTH / 2) - 35);
         reset.setTranslateY(15);
         root.getChildren().add(reset);
         reset.setOnAction((ActionEvent e) -> {         		
-                generateMaze();
-                rendered = false;                
+        	generateMaze();
+        	rendered = false; 
+        	showSolution.setText("Show Solution"); 
         });        
         
         GraphicsContext gc = canvas.getGraphicsContext2D();
@@ -193,10 +214,10 @@ public class Game extends Application {
                     }
                 }*/
                                                 
-                /*//render graph
+                //render graph
                 if (rendered) {
                     mazeGraph.render(gc);
-                }*/
+                }
                 
                 //initMazeGraph depends on pixel data so is not called until
                 //walls have been rendered
@@ -361,7 +382,6 @@ public class Game extends Application {
      * 	player is positioned at the start position.
      */
     private void initMazeGraph() {
-    	//System.out.println("beginning of initMazeGraph");
         mazeGraph = new MazeGraph();
         PixelReader reader = getPixelReader();
         
@@ -403,7 +423,8 @@ public class Game extends Application {
         //eliminate closed off areas (disconnected subgraphs) and make one fully
         //connected graph
         mazeGraph.connectGraph();
-        //System.out.println("End of initMazeGraph");
+        mazeGraph.solveMaze();
+        //mazeGraph.renderSolution();
     }
     
     /**
