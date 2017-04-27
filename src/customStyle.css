@@ -1,0 +1,15 @@
+.root{
+	-fx-background: linear-gradient(#0F5E11, #303030);
+}
+
+.button{
+	-fx-background-color: DeepSkyBlue;
+}
+
+.button:pressed{
+	-fx-background-color: DarkSeaGreen;
+	-fx-text-fill: MidnightBlue;
+    -fx-background-insets: 0 0 -1 0, 0, 1, 1;
+}
+
+
