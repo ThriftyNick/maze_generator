@@ -17,8 +17,10 @@ import javafx.scene.image.PixelReader;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
+import javafx.scene.media.AudioClip;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
+import sun.audio.AudioPlayer;
 
 /*TODO:
  * Finish code optimization
@@ -32,6 +34,18 @@ import javafx.stage.Stage;
  * Make available on github
  */
 
+/*
+ * winSound.wav by maxmakessounds
+ * https://www.freesound.org/people/maxmakessounds/sounds/353546/
+ * 
+ * startSound.wav by CosmicEmbers
+ * https://www.freesound.org/people/CosmicEmbers/sounds/387351/
+ * 
+ * Creative Commons Attribution License
+ * https://creativecommons.org/licenses/by/3.0/
+ * 
+ */
+
 public class Game extends Application {
     public static final int CANVAS_WIDTH = 512;
     public static final int CANVAS_HEIGHT = 512;
@@ -40,6 +54,8 @@ public class Game extends Application {
     public static final int EXIT_COLUMN = GRID_SIZE * 2 - 3;
     private static final double WALL_DENSITY = 0.55;
     private static Canvas canvas;
+    private static final AudioClip MAZE_BEGIN_SOUND = new AudioClip(Game.class.getResource("startSound.wav").toString());
+    private static final AudioClip MAZE_COMPLETE_SOUND = new AudioClip(Game.class.getResource("winSound.wav").toString());
     private boolean rendered, congratulated;
     private WallAnchor[][] anchorPoints;
     private static List<Wall> walls;
@@ -66,7 +82,7 @@ public class Game extends Application {
         scene.getStylesheets().add("/customStyle.css");
         
         canvas = new Canvas(CANVAS_WIDTH, CANVAS_HEIGHT);
-        root.getChildren().add(canvas);                               
+        root.getChildren().add(canvas);                      
         
         Button showSolution = new Button("Show Solution");
         Scene snapScene = new Scene(showSolution);
@@ -394,7 +410,8 @@ public class Game extends Application {
         mazeGraph.connectGraph();
         
         //compute shortest solution path        
-        mazeGraph.solveMaze();                
+        mazeGraph.solveMaze(); 
+        MAZE_BEGIN_SOUND.play();
     }
     
     /**
@@ -445,6 +462,30 @@ public class Game extends Application {
         return newSpot;
     } 
     
+    public static Wall[] detectSurroundingWalls(Point2D loc) {
+    	Wall[] surroundingWalls = {null, null, null, null};
+    	Point2D above = new Point2D(loc.getX(), loc.getY() - SPACING);
+        Point2D right = new Point2D(loc.getX() + SPACING, loc.getY());
+        Point2D below = new Point2D(loc.getX(), loc.getY() + SPACING);
+        Point2D left = new Point2D(loc.getX() - SPACING, loc.getY());
+        for (Wall w : walls) {
+            Rectangle2D wallRect = w.getBoundingRect();
+            if (wallRect.contains(above)) {
+            	surroundingWalls[0] = w;
+            }
+            else if (wallRect.contains(right)) {
+            	surroundingWalls[1] = w;
+            }
+            else if (wallRect.contains(below)) {
+            	surroundingWalls[2] = w;
+            }
+            else if (wallRect.contains(left)) {
+            	surroundingWalls[3] = w;
+            }
+        }
+    	return surroundingWalls;
+    }
+    
     private static void breachWall(Wall wall) {
         walls.remove(wall);
         walls.add(new Wall(wall.getP1(), null));
@@ -476,6 +517,7 @@ public class Game extends Application {
     	 * flash next maze button
     	 */
     	Wall.setWallColor(1);
+    	MAZE_COMPLETE_SOUND.play();
     }
 
     private static class TimeValue {

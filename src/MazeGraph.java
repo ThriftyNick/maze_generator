@@ -25,13 +25,13 @@ public class MazeGraph {
     
     public void render(GraphicsContext gc) {
         //render vertices
-        /*if (verts != null && !verts.isEmpty()) {
+        if (verts != null && !verts.isEmpty()) {
             Set<String> ks = verts.keySet();
             for (String key : ks) {
                 Vertex v = verts.get(key);
                 v.render(gc);
             }
-        }*/
+        }
         
         //render solution
         if (renderSolution) {
@@ -190,7 +190,8 @@ public class MazeGraph {
     		return new Point2D(v.x, v.y);
     	}
     	
-    	throw new NoSuchElementException("Could not find vertex at row: " + row + " col: " + col);
+    	//throw new NoSuchElementException("Could not find vertex at row: " + row + " col: " + col);
+    	return null;
     }
     
     private Vertex getStartVert() {
