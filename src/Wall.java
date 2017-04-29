@@ -97,13 +97,18 @@ public class Wall {
         return p2;
     }
     
-    public static void mazeSolvedColor() {
-    	currentColor = SOLVED_COLOR;
-    }
-    
-    public static void mazeUnsolvedColor() {
-    	currentColor = UNSOLVED_COLOR;
-    }
+    public static void setWallColor(int colorOption) {
+    	if (colorOption == 0) {
+    		currentColor = UNSOLVED_COLOR;
+    	}
+    	else if (colorOption == 1) {
+    		currentColor = SOLVED_COLOR;
+    	}
+    	else {
+    		throw new IllegalArgumentException("Unknown color option: " + colorOption + 
+    				" Available options: 0: UNSOLVED_COLOR, 1: SOLVED_COLOR");
+    	}
+    }    
     
     public static Color getCurrentColor() {
     	return currentColor;

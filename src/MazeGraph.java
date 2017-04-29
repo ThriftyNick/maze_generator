@@ -1,9 +1,9 @@
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Queue;
 import java.util.Set;
 
@@ -17,11 +17,7 @@ public class MazeGraph {
     private boolean renderSolution;
     private LinkedList<Vertex> solutionPath;
     
-    public MazeGraph() {
-        //adjList = new List[numV];
-        /*for (int i = 0; i < numV; i++) {
-            adjList[i] = new LinkedList<Vertex>();
-        }*/
+    public MazeGraph() {        
         verts = new HashMap<String, Vertex>();
         renderSolution = false;
         solutionPath = new LinkedList<Vertex>();
@@ -77,9 +73,6 @@ public class MazeGraph {
         Vertex theVertex = new Vertex(vertX, vertY, row, col, adjs);
         String key = theVertex.vNum;
         verts.put(key, theVertex);
-        //System.out.println(verts.size());
-        //System.out.println(key);
-        //System.out.println(adjs);
     }
     
     private void addVert(Vertex v) {
@@ -90,19 +83,7 @@ public class MazeGraph {
     }
     
     public void connectGraph() {
-        List<MazeGraph> subGraphs = getSubGraphs();
-        
-        /*
-            //print subgraphs out to console (debugging)
-            for (MazeGraph mg : subGraphs) {
-                System.out.println(mg);
-                Set<String> ks = mg.verts.keySet();
-                for (String key : ks) {
-                    System.out.print(key + ", ");
-                }
-                System.out.print("\n");
-            }*/
-        
+        List<MazeGraph> subGraphs = getSubGraphs();             
         //We want one fully connected graph
         while (subGraphs.size() != 1) {
             //in each subgraph breach a wall
@@ -192,8 +173,7 @@ public class MazeGraph {
     private void traverseGraph(Vertex localNode, Set<Vertex> mems, MazeGraph mg) {
         if (localNode == null) return;
         if (mems.contains(localNode)) return;
-        mems.add(localNode);
-        //mg.addVert(localNode.x, localNode.y, localNode.row, localNode.col, null);
+        mems.add(localNode);     
         mg.addVert(localNode);
             List<String> adjs = localNode.adjacencies;
             for (String adjacentNodeKey : adjs) {
@@ -210,7 +190,7 @@ public class MazeGraph {
     		return new Point2D(v.x, v.y);
     	}
     	
-    	return null;
+    	throw new NoSuchElementException("Could not find vertex at row: " + row + " col: " + col);
     }
     
     private Vertex getStartVert() {
@@ -220,7 +200,8 @@ public class MazeGraph {
     			return currentVert;
     		}
     	}
-    	return null;
+    	
+    	throw new NoSuchElementException("Unable to find Start vertex");
     }
     
     private Vertex getExitVert() {
@@ -230,7 +211,8 @@ public class MazeGraph {
     			return currentVert;
     		}
     	}
-    	return null;
+    	
+    	throw new NoSuchElementException("Unable to find Exit vertex.");
     }
     
     public void renderSolution(boolean b) {
@@ -238,20 +220,13 @@ public class MazeGraph {
     }
     
     public void solveMaze() {
-    	//gets called after maze has been initialized
     	solutionPath = getSolutionPath();
-    	
-    	//testing purposes
-    	/*for (Vertex v : solutionPath) {
-    		System.out.println(v.vNum);
-    	}*/
     }
     
     private LinkedList<Vertex> getSolutionPath() {
     	LinkedList<Vertex> result = new LinkedList<Vertex>();
     	breadthFirstSearch();
-    	Vertex current = getExitVert();
-    	//result.addFirst(current);
+    	Vertex current = getExitVert();    
     	
     	while (current.col != -1) {
     		result.addFirst(current);

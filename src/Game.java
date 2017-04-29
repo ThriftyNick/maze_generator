@@ -9,8 +9,6 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Point2D;
 import javafx.geometry.Rectangle2D;
-import javafx.scene.AmbientLight;
-import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -22,31 +20,16 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 
-/*TODO
- * Change background to black
+/*TODO:
+ * Finish code optimization
  * 
- * Bug: walls take 2 new mazes to switch back to UNSOLVED_COLOR after winning
+ * add sound effect for win state
  * 
- * Eliminate static methods by implementing wall management class
+ * outline walls
  * 
- * outline walls for better appearance
- */
-
-/*IDEAS
+ * Update on site
  * 
- * Offer various difficulty levels based on WALL_DENSITY
- *
- * After winning highlight player's route in one color and best route in another.
- * Calculate score based on how much player deviates from best path (including routes backtracked, maybe)
- * 
- * Make a countdown timer for extra challenge and scoring system based on how close player's
- * path was to the fastest route.
- * 
- * DB connected high-score list
- * 
- * Make mazes much larger and maybe make walls thinner
- * 
- * implement hint system which shows the next 10 moves or so
+ * Make available on github
  */
 
 public class Game extends Application {
@@ -76,20 +59,20 @@ public class Game extends Application {
     @Override
     public void start(Stage primaryStage) throws Exception {
         //initialization
-        primaryStage.setTitle("Maze Generator -- By: ThriftyNick");
-        //Group root = new Group();
+        primaryStage.setTitle("ThriftyNick's Maze Generator");
         Pane root = new Pane();
         Scene scene = new Scene(root);
         primaryStage.setScene(scene);
         scene.getStylesheets().add("/customStyle.css");
         
         canvas = new Canvas(CANVAS_WIDTH, CANVAS_HEIGHT);
-        root.getChildren().add(canvas);
-                        
+        root.getChildren().add(canvas);                               
         
         Button showSolution = new Button("Show Solution");
-        showSolution.setTranslateX((CANVAS_WIDTH / 2) - 35);
-        showSolution.setTranslateY(CANVAS_HEIGHT - 55);
+        Scene snapScene = new Scene(showSolution);
+        snapScene.snapshot(null);       
+        showSolution.setTranslateX((CANVAS_WIDTH / 2) - showSolution.getWidth() / 2);
+        showSolution.setTranslateY(GRID_SIZE * 2 * SPACING + 50); 
         root.getChildren().add(showSolution);
         showSolution.setOnAction((ActionEvent e) -> {
         	if (showSolution.getText().contains("Show")) {
@@ -102,8 +85,11 @@ public class Game extends Application {
         	}
         });
         
+        
         Button reset = new Button("New Maze");
-        reset.setTranslateX((CANVAS_WIDTH / 2) - 35);
+        snapScene = new Scene(reset);
+        snapScene.snapshot(null);
+        reset.setTranslateX((CANVAS_WIDTH / 2) - reset.getWidth() / 2);
         reset.setTranslateY(15);
         root.getChildren().add(reset);
         reset.setOnAction((ActionEvent e) -> {         		
@@ -198,16 +184,14 @@ public class Game extends Application {
                 /*END GAME LOGIC*/
                 
                 /*RENDERING*/
-                gc.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-                //gc.setFill(Color.BLACK);
-                //gc.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                gc.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);                
                 
                 //render walls
                 for (Wall w : walls) {
                     w.render(gc);
                 }
                 
-                /*//render grid                
+                /*//render anchor points               
                 for (int row = 0; row < GRID_SIZE; row++) {
                     for (int col = 0; col < GRID_SIZE; col++) {
                         anchorPoints[row][col].render(gc);
@@ -238,16 +222,12 @@ public class Game extends Application {
         }.start();
         
         primaryStage.show();
+     
     }
     
     private void generateMaze() {
-    	//player.setGraphLoc(0, 0);
-    	
-        initWallAnchors(GRID_SIZE);
-        //System.out.println("WallAnchors set");
-        setWalls();
-        //System.out.println("Walls set");
-        //initMazeGraph();
+        initWallAnchors(GRID_SIZE);        
+        setWalls();    
     }
     
     private void initWallAnchors(int size) {
@@ -293,14 +273,15 @@ public class Game extends Application {
         int entryLoc = 0;
         int exitLoc = 0;
         int configuration = flipCoin();
-        //TODO: simplify by starting with loc1 and loc2 then assigning appropriately to cut back on code repetition
+        int loc1 = (int) (Math.random() * (GRID_SIZE - 1) / 2);
+        int loc2 = (int) (Math.random() * (GRID_SIZE - 1) / 2 + GRID_SIZE / 2);
         if (configuration == 0) {
-            entryLoc = (int) (Math.random() * (GRID_SIZE - 1) / 2);
-            exitLoc = (int) (Math.random() * (GRID_SIZE - 1) / 2 + GRID_SIZE / 2);
+            entryLoc = loc1;
+            exitLoc = loc2;
         }
         else {
-            entryLoc = (int) (Math.random() * (GRID_SIZE - 1) / 2 + GRID_SIZE / 2);
-            exitLoc = (int) (Math.random() * (GRID_SIZE - 1) / 2);
+            entryLoc = loc2;
+            exitLoc = loc1;
         }
         
         if (entryLoc == 0) entryLoc = 1;
@@ -341,28 +322,23 @@ public class Game extends Application {
         }
         
         //place inner walls
-        //TODO: combine into one loop
-        //horizontal walls
         Set<Wall> placedWalls = new HashSet<Wall>();
-        double totalAvailablePositions = (GRID_SIZE - 2) * (GRID_SIZE - 2);
+        //Takes two anchor points for one full wall position
+        double totalAvailablePositions = 2 * ((GRID_SIZE - 2) * (GRID_SIZE - 2));
         double percentComplete = 0.0;
         while (percentComplete < WALL_DENSITY) {
-            Wall w = null;
-            do {
+        	//horizontal wall
+        	Wall w = null;
+        	do {
                 int row = (int) (Math.random() * (GRID_SIZE - 2) + 1);
                 int col = (int) (Math.random() * (GRID_SIZE - 1));
                 w = new Wall(anchorPoints[row][col], anchorPoints[row][col + 1]);
             } while (placedWalls.contains(w));
             placedWalls.add(w);
             walls.add(w);
-            percentComplete = placedWalls.size() / totalAvailablePositions;
-        }
-        
-        //vertical walls
-        placedWalls = new HashSet<Wall>();
-        percentComplete = 0.0;
-        while (percentComplete < WALL_DENSITY) {
-            Wall w = null;
+            
+            //vertical wall
+            w = null;
             do {
                 int row = (int) (Math.random() * (GRID_SIZE - 1));
                 int col = (int) (Math.random() * (GRID_SIZE - 2) + 1);
@@ -372,7 +348,6 @@ public class Game extends Application {
             walls.add(w);
             percentComplete = placedWalls.size() / totalAvailablePositions;
         }
-        //System.out.println("end of setWalls");
     }
     
     /**
@@ -382,7 +357,7 @@ public class Game extends Application {
      * 	player is positioned at the start position.
      */
     private void initMazeGraph() {
-        mazeGraph = new MazeGraph();
+        mazeGraph = new MazeGraph();        
         PixelReader reader = getPixelReader();
         
         double startX = anchorPoints[0][0].getX() + WallAnchor.SIZE / 2;
@@ -402,19 +377,13 @@ public class Game extends Application {
         //add inner vertices
         for (int row = 0; row < GRID_SIZE + GRID_SIZE - 1 - 2; row++) {
             for (int col = 0; col < GRID_SIZE + GRID_SIZE - 1 - 2; col++) {
-                //Color testColor = reader.getColor((int) xPos, (int) yPos);
-                //System.out.print(testColor + ", ");
-            	if (!reader.getColor((int) xPos, (int) yPos).equals(Wall.UNSOLVED_COLOR)) {
-                //if (!reader.getColor((int) xPos, (int) yPos).equals(Wall.UNSOLVED_COLOR) && !reader.getColor((int) xPos, (int) yPos).equals(Wall.SOLVED_COLOR)) {
-                //if (!reader.getColor((int) xPos, (int) yPos).equals(Wall.getCurrentColor())) {
+            	if (!reader.getColor((int) xPos, (int) yPos).equals(Wall.UNSOLVED_COLOR)) {                
             		mazeGraph.addVert(xPos, yPos, row, col, reader);
-                }
-                
+                }                
                 xPos += SPACING;
             }
             xPos = startX;
-            yPos += SPACING;
-            
+            yPos += SPACING;            
         }
         
         //add exit vertex
@@ -423,12 +392,13 @@ public class Game extends Application {
         //eliminate closed off areas (disconnected subgraphs) and make one fully
         //connected graph
         mazeGraph.connectGraph();
-        mazeGraph.solveMaze();
-        //mazeGraph.renderSolution();
+        
+        //compute shortest solution path        
+        mazeGraph.solveMaze();                
     }
     
     /**
-     * looks around a coordinate position for the presence of a wall, has it breached, and 
+     * looks around a coordinate position for the presence of a wall, breaches it, and 
      * returns the position of the new traversable location so that a vertex can be added
      * 
      * @param xCoord
@@ -505,7 +475,7 @@ public class Game extends Application {
     	 * play sound effect
     	 * flash next maze button
     	 */
-    	Wall.mazeSolvedColor();
+    	Wall.setWallColor(1);
     }
 
     private static class TimeValue {

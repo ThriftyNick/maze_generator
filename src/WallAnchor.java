@@ -19,7 +19,6 @@ public class WallAnchor {
     public void render(GraphicsContext gc) {
         gc.setStroke(Color.HOTPINK);
         gc.setLineWidth(1);
-        //gc.strokeRect(x - SIZE / 2, y - SIZE / 2, SIZE, SIZE);
         gc.strokeRect(x, y, SIZE, SIZE);
     }
     
