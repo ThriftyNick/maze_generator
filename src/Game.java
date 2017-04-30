@@ -19,8 +19,8 @@ import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.Pane;
 import javafx.scene.media.AudioClip;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
 import javafx.stage.Stage;
-import sun.audio.AudioPlayer;
 
 /*TODO:
  * Finish code optimization
@@ -202,18 +202,18 @@ public class Game extends Application {
                 /*RENDERING*/
                 gc.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);                
                 
+                //render anchor points               
+                /*for (int row = 0; row < GRID_SIZE; row++) {
+                	for (int col = 0; col < GRID_SIZE; col++) {
+                		anchorPoints[row][col].render(gc);
+                	}
+                }*/
+                
                 //render walls
                 for (Wall w : walls) {
                     w.render(gc);
-                }
-                
-                /*//render anchor points               
-                for (int row = 0; row < GRID_SIZE; row++) {
-                    for (int col = 0; col < GRID_SIZE; col++) {
-                        anchorPoints[row][col].render(gc);
-                    }
-                }*/
-                                                
+                }                                
+                                                                
                 //render graph
                 if (rendered) {
                     mazeGraph.render(gc);
@@ -223,6 +223,7 @@ public class Game extends Application {
                 //walls have been rendered
                 if (!rendered) {
                     initMazeGraph();
+                    outlineWalls();
                     rendered = true;
                     congratulated = false;
                 }
@@ -263,26 +264,32 @@ public class Game extends Application {
     }
 
     private void setWalls() {
-        walls = new ArrayList<Wall>();
+        walls = new ArrayList<Wall>();                 
         
         //top & bottom walls
         for (int col = 0; col < GRID_SIZE - 1; col++) {
-            Wall w = new Wall(anchorPoints[0][col], anchorPoints[0][col + 1]);
+            //top wall
+        	Wall w = new Wall(anchorPoints[0][col], anchorPoints[0][col + 1]);
             w.markBorderWall();
-            walls.add(w);
+            walls.add(w);            
+            
+            //bottom wall
             w = new Wall(anchorPoints[GRID_SIZE - 1][col], anchorPoints[GRID_SIZE - 1][col + 1]);
             w.markBorderWall();
-            walls.add(w);
+            walls.add(w);                       
         }
         
         //left & right walls
         for (int row = 0; row < GRID_SIZE - 1; row++) {
+        	//left wall
             Wall w = new Wall(anchorPoints[row][0], anchorPoints[row + 1][0]);
             w.markBorderWall();
-            walls.add(w);
+            walls.add(w);            
+            
+            //right wall
             w = new Wall(anchorPoints[row][GRID_SIZE - 1], anchorPoints[row + 1][GRID_SIZE - 1]);
-            walls.add(w);
             w.markBorderWall();
+            walls.add(w);
         }
         
         //two possible configurations for entry/exit locations
@@ -319,8 +326,7 @@ public class Game extends Application {
         if (doorway != null) {
             breachWall(doorway);
             doorwayInfo[0] = doorway.getP1().getY() + SPACING + (SPACING / 2); //set entrance vertex yPos
-            doorwayInfo[1] = doorway.getP1().getRow() * 2; //set entrance vertex row
-            //player.setPosition(doorway.getP1().getX(), doorwayInfo[0]);
+            doorwayInfo[1] = doorway.getP1().getRow() * 2; //set entrance vertex row            
         }
        
         //create Exit point
@@ -334,7 +340,7 @@ public class Game extends Application {
         if (doorway != null) {
             breachWall(doorway);
         	doorwayInfo[2] = doorway.getP1().getY() + SPACING + (SPACING / 2); //set exit vertex yPos
-        	doorwayInfo[3] = doorway.getP1().getRow() * 2; //set exit vertex row
+        	doorwayInfo[3] = doorway.getP1().getRow() * 2; //set exit vertex row        	        	        	
         }
         
         //place inner walls
@@ -364,6 +370,7 @@ public class Game extends Application {
             walls.add(w);
             percentComplete = placedWalls.size() / totalAvailablePositions;
         }
+        
     }
     
     /**
@@ -411,56 +418,39 @@ public class Game extends Application {
         
         //compute shortest solution path        
         mazeGraph.solveMaze(); 
-        MAZE_BEGIN_SOUND.play();
-    }
-    
-    /**
-     * looks around a coordinate position for the presence of a wall, breaches it, and 
-     * returns the position of the new traversable location so that a vertex can be added
-     * 
-     * @param xCoord
-     * @param yCoord
-     * @return
-     */
-    public static Point2D seekNBreach(double xCoord, double yCoord) {
-        //check surroundings for presence of wall and have it breached
-        //iterate over list of walls and if a wall contains the offset coords, that is the wall to be breached
-        Point2D above = new Point2D(xCoord, yCoord - SPACING);
-        Point2D right = new Point2D(xCoord + SPACING, yCoord);
-        Point2D below = new Point2D(xCoord, yCoord + SPACING);
-        Point2D left = new Point2D(xCoord - SPACING, yCoord);
-        Point2D newSpot = null;
-        Wall targetWall = null;
-        for (Wall w : walls) {
-            Rectangle2D wallRect = w.getBoundingRect();
-            if (wallRect.contains(above) && !w.isHalfWall() && !w.isBorderWall()) {
-                newSpot = above;
-                targetWall = w;
-                break;
-            }
-            else if (wallRect.contains(right) && !w.isHalfWall() && !w.isBorderWall()) {
-                newSpot = right;
-                targetWall = w;
-                break;
-            }
-            else if (wallRect.contains(below) && !w.isHalfWall() && !w.isBorderWall()) {
-                newSpot = below;
-                targetWall = w;
-                break;
-            }
-            else if (wallRect.contains(left) && !w.isHalfWall() && !w.isBorderWall()) {
-                newSpot = left; 
-                targetWall = w;
-                break;
-            }
-        }
         
-        if (targetWall != null) {
-            breachWall(targetWall);
-        }
-        //return position for new vertex
-        return newSpot;
+        MAZE_BEGIN_SOUND.play();
     } 
+    
+    private void outlineWalls() {    	
+    	for (int row = 0; row < EXIT_COLUMN; row++) {
+    		for (int col = -1; col <= EXIT_COLUMN; col++) {
+    			Point2D pt = mazeGraph.getVertPos(row, col);
+    			if (pt != null) {
+    				Wall[] surroundingWalls = detectSurroundingWalls(pt);
+    				for (int direction = 0; direction < 4; direction++) {
+    					if (surroundingWalls[direction] != null) {
+    						Wall w = surroundingWalls[direction];
+    						Line l = null;
+    						double lineSpacing = SPACING / 2.0;
+    						switch (direction) {
+    							case 0: l = new Line(pt.getX() - lineSpacing, pt.getY() - lineSpacing, pt.getX() + lineSpacing, pt.getY() - lineSpacing);
+    									break;
+    							case 1:	l = new Line(pt.getX() + lineSpacing, pt.getY() - lineSpacing, pt.getX() + lineSpacing, pt.getY() + lineSpacing);
+    									break;
+    							case 2: l = new Line(pt.getX() - lineSpacing, pt.getY() + lineSpacing, pt.getX() + lineSpacing, pt.getY() + lineSpacing);
+    									break;
+    							case 3:	l = new Line(pt.getX() - lineSpacing, pt.getY() - lineSpacing, pt.getX() - lineSpacing, pt.getY() + lineSpacing);
+    									break;
+    						}
+    					
+    						w.addOutlineEdge(l);    						    						    					
+    					}
+    				}    				
+    			}
+    		}
+    	}
+    }
     
     public static Wall[] detectSurroundingWalls(Point2D loc) {
     	Wall[] surroundingWalls = {null, null, null, null};
@@ -471,25 +461,35 @@ public class Game extends Application {
         for (Wall w : walls) {
             Rectangle2D wallRect = w.getBoundingRect();
             if (wallRect.contains(above)) {
-            	surroundingWalls[0] = w;
+            	surroundingWalls[0] = w;            	
             }
             else if (wallRect.contains(right)) {
-            	surroundingWalls[1] = w;
+            	surroundingWalls[1] = w;            	
             }
             else if (wallRect.contains(below)) {
-            	surroundingWalls[2] = w;
+            	surroundingWalls[2] = w;            	
             }
             else if (wallRect.contains(left)) {
-            	surroundingWalls[3] = w;
+            	surroundingWalls[3] = w;            	
             }
         }
     	return surroundingWalls;
     }
     
-    private static void breachWall(Wall wall) {
+    /**
+     * Knocks down a wall
+     * @param wall the wall to breach
+     * @return Center point of wall which was breached
+     */
+    public static Point2D breachWall(Wall wall) {
+    	Rectangle2D r = wall.getBoundingRect();
+    	double centerX = r.getMaxX() - r.getWidth() / 2.0;
+    	double centerY = r.getMaxY() - r.getHeight() / 2.0;
+    	Point2D centerPoint = new Point2D(centerX, centerY);
         walls.remove(wall);
         walls.add(new Wall(wall.getP1(), null));
         walls.add(new Wall(wall.getP2(), null));
+        return centerPoint;
     }
 
     public static PixelReader getPixelReader() {
@@ -508,11 +508,10 @@ public class Game extends Application {
     /**
      * Called when exit has been reached
      */
-    private void congratulate() {
-    	//System.out.println("Winner!");
+    private void congratulate() {    	
     	/*
     	 * Winning Message:
-    	 * change wall color to green
+    	 * change walls color
     	 * play sound effect
     	 * flash next maze button
     	 */

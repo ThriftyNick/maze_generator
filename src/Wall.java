@@ -1,6 +1,10 @@
+import java.util.LinkedList;
+import java.util.List;
+
 import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Line;
 
 public class Wall {
     private WallAnchor p1, p2;
@@ -9,14 +13,14 @@ public class Wall {
     private boolean isBorderWall;
     private static Color currentColor;
     public static final Color UNSOLVED_COLOR = Color.ORANGERED;
-    public static final Color SOLVED_COLOR = Color.GREENYELLOW;
+    public static final Color SOLVED_COLOR = Color.DODGERBLUE;
+    private List<Line> outlineEdges;
     
     public Wall(WallAnchor p1, WallAnchor p2) {
         this.p1 = p1;
         this.p2 = p2;
         
         if (p2 == null) {
-            //p2 = p1;
             isHalfWall = true;
             boundingRect = new Rectangle2D(p1.getX(), p1.getY(), WallAnchor.SIZE, WallAnchor.SIZE);
         }
@@ -25,7 +29,7 @@ public class Wall {
             boundingRect = setBoundingRect();            
         } 
         currentColor = UNSOLVED_COLOR;
-        //System.out.println(currentColor);
+        outlineEdges = new LinkedList<Line>();
     }
     
     private Rectangle2D setBoundingRect() {
@@ -68,13 +72,19 @@ public class Wall {
     }
     
     public void render(GraphicsContext gc) {
-        gc.setStroke(Color.BLACK);
-        gc.setFill(currentColor);
-        gc.setLineWidth(2);
-        
+        gc.setFill(currentColor);        
         gc.fillRect(boundingRect.getMinX(), boundingRect.getMinY(), boundingRect.getWidth(), boundingRect.getHeight());
-        //gc.strokeRect(boundingRect.getMinX(), boundingRect.getMinY(), boundingRect.getWidth(), boundingRect.getHeight());
         
+        gc.setStroke(Color.BLACK);
+        gc.setLineWidth(2);
+        for (Line l : outlineEdges) {
+        	gc.strokeLine(l.getStartX(), l.getStartY(), l.getEndX(), l.getEndY());
+        }       
+        
+    }        
+    
+    public void addOutlineEdge(Line l) {
+    	outlineEdges.add(l);
     }
     
     public boolean isHalfWall() {
@@ -86,7 +96,7 @@ public class Wall {
     }
     
     public void markBorderWall() {
-        isBorderWall = true;
+        isBorderWall = true;        
     }
     
     public WallAnchor getP1() {

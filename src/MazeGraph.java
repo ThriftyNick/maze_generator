@@ -25,20 +25,20 @@ public class MazeGraph {
     
     public void render(GraphicsContext gc) {
         //render vertices
-        if (verts != null && !verts.isEmpty()) {
+        /*if (verts != null && !verts.isEmpty()) {
             Set<String> ks = verts.keySet();
             for (String key : ks) {
                 Vertex v = verts.get(key);
                 v.render(gc);
             }
-        }
+        }*/
         
-        //render solution
+        //render solution path
         if (renderSolution) {
         	//draw edges between all vertices in solutionPath
         	gc.setStroke(Color.ORANGE);
         	//gc.setLineWidth(2);
-        	Vertex start = solutionPath.getFirst();
+        	Vertex start = solutionPath.getFirst();        	
         	for (Vertex end : solutionPath) {
         		gc.strokeLine(start.x, start.y, end.x, end.y);        		
         		start = end;
@@ -93,11 +93,18 @@ public class MazeGraph {
                 for (String key : ks) {
                     Vertex vert = verts.get(key);
                     
+                    //Find wall to breach and breach it to connect subgraph to outer graph
                     //ensure point is betwixt anchor points (not inside of one)
                     //even number columns and rows
                     Point2D newVertLoc = null;
                     if (vert.row % 2 == 0 && vert.col % 2 == 0) {
-                        newVertLoc = Game.seekNBreach(vert.x, vert.y);
+                    	Wall[] localWalls = Game.detectSurroundingWalls(new Point2D(vert.x, vert.y));
+                    	for (int i = 0; i < 4; i++) {
+                    		if (localWalls[i] != null && !localWalls[i].isBorderWall() && !localWalls[i].isHalfWall()) {
+                    			newVertLoc = Game.breachWall(localWalls[i]);
+                    			break;
+                    		}
+                    	}
                     }
                     
                     if (newVertLoc != null) {
